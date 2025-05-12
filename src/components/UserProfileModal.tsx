@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Save, User, Settings, AlertCircle } from "lucide-react";
+import { Plus, Save, User, Settings, AlertCircle, LogOut } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 
 interface UserProfileModalProps {
   open?: boolean;
@@ -27,6 +29,17 @@ const UserProfileModal = ({
   open = true,
   onOpenChange,
 }: UserProfileModalProps) => {
+  const { currentUser, logOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logOut();
+      navigate("/login");
+    } catch (error) {
+      console.error("Failed to log out", error);
+    }
+  };
   const [activeTab, setActiveTab] = useState("personal");
   const [allergens, setAllergens] = useState<string[]>([
     "Peanuts",
@@ -55,13 +68,22 @@ const UserProfileModal = ({
         <div className="flex flex-col items-center mb-6 pt-2">
           <Avatar className="h-24 w-24 mb-4">
             <AvatarImage
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=user123"
+              src={
+                currentUser?.photoURL ||
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.uid || "user"}`
+              }
               alt="User"
             />
-            <AvatarFallback>JD</AvatarFallback>
+            <AvatarFallback>
+              {currentUser?.displayName?.charAt(0) ||
+                currentUser?.email?.charAt(0) ||
+                "U"}
+            </AvatarFallback>
           </Avatar>
-          <h2 className="text-xl font-semibold">John Doe</h2>
-          <p className="text-muted-foreground">john.doe@example.com</p>
+          <h2 className="text-xl font-semibold">
+            {currentUser?.displayName || "User"}
+          </h2>
+          <p className="text-muted-foreground">{currentUser?.email}</p>
         </div>
 
         <Tabs
@@ -320,6 +342,14 @@ const UserProfileModal = ({
           <Button className="flex items-center gap-2">
             <Save size={16} />
             Save Changes
+          </Button>
+          <Button
+            variant="destructive"
+            className="flex items-center gap-2 ml-2"
+            onClick={handleLogout}
+          >
+            <LogOut size={16} />
+            Logout
           </Button>
         </DialogFooter>
       </DialogContent>
